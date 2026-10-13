@@ -1,16 +1,16 @@
 # herdr-codebuddy
 
-This adapter reports CodeBuddy hook events to Herdr. It does not change Herdr or add process and screen detection.
+CodeBuddy hooks report session state to Herdr. This adds no Herdr process or screen detection.
 
-| CodeBuddy event | Herdr state/action |
+| CodeBuddy event | Herdr report |
 | --- | --- |
-| `SessionStart` | `idle`; includes `session_id` when provided |
+| `SessionStart` | `idle`, with `session_id` when available |
 | `UserPromptSubmit` | `working` |
 | `Stop` | `idle` |
 | `Notification` (`permission_prompt`) | `blocked` |
-| `SessionEnd` | `release-agent` |
+| `SessionEnd` | release the agent |
 
-The hook runs only inside a Herdr pane (`HERDR_ENV=1`, `HERDR_PANE_ID`, and `HERDR_BIN_PATH`). It requires Node.js on the hook command's `PATH`. Reporting failures do not interrupt CodeBuddy. Event ordering uses an epoch-millisecond `--seq`, so two reports in the same millisecond can share a sequence.
+The hook reports only when CodeBuddy runs in a Herdr pane and `HERDR_ENV`, `HERDR_PANE_ID`, and `HERDR_BIN_PATH` are set. It requires `node` on `PATH`. Reports run asynchronously; failures do not block CodeBuddy. The `--seq` value is the current time in milliseconds, so events in the same millisecond may share a value.
 
 ## Install
 
