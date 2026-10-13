@@ -37,7 +37,13 @@ async function main() {
   ];
 
   if (!release) args.push('--state', EVENT_STATES[name]);
-  if (name === 'SessionStart' && event.session_id) args.push('--agent-session-id', event.session_id);
+  if (name === 'SessionStart' && typeof event.session_id === 'string'
+      && /^[a-zA-Z0-9][a-zA-Z0-9:_-]*$/.test(event.session_id)) {
+    args.push(
+      '--agent-session-id', event.session_id,
+      '--', 'codebuddy', '--resume', event.session_id,
+    );
+  }
   if (name === 'Notification') args.push('--message', 'CodeBuddy permission required');
 
   if (process.env.HERDR_CODEBUDDY_DRY_RUN === '1') {

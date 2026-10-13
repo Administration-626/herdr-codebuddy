@@ -49,8 +49,17 @@ test('maps lifecycle and permission events to report-agent states', () => {
     assert.ok(Number(result.args[result.args.indexOf('--seq') + 1]) > 0);
     if (event === 'SessionStart') {
       assert.equal(result.args[result.args.indexOf('--agent-session-id') + 1], 'session-abc');
+      assert.deepEqual(result.args.slice(result.args.indexOf('--') + 1), [
+        'codebuddy', '--resume', 'session-abc',
+      ]);
     }
   }
+});
+
+test('omits recovery data for invalid session IDs', () => {
+  const result = runHook('SessionStart', { session_id: "bad'id" });
+  assert.ok(!result.args.includes('--agent-session-id'));
+  assert.ok(!result.args.includes('--'));
 });
 
 test('releases the reported agent on SessionEnd', () => {

@@ -1,10 +1,12 @@
 # herdr-codebuddy
 
+[![test](https://github.com/Ziy1-Tan/herdr-codebuddy/actions/workflows/test.yml/badge.svg)](https://github.com/Ziy1-Tan/herdr-codebuddy/actions/workflows/test.yml)
+
 CodeBuddy hooks report session state to Herdr. This adds no Herdr process or screen detection.
 
 | CodeBuddy event | Herdr report |
 | --- | --- |
-| `SessionStart` | `idle`, with `session_id` when available |
+| `SessionStart` | `idle`, with the session ID and `codebuddy --resume` command when available |
 | `UserPromptSubmit` | `working` |
 | `Stop` | `idle` |
 | `Notification` (`permission_prompt`) | `blocked` |
@@ -17,7 +19,6 @@ Requirements: `curl`, Node.js, and CodeBuddy.
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Ziy1-Tan/herdr-codebuddy/main/install.sh | sh
 ```
-
 
 To uninstall:
 
