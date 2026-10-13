@@ -1,0 +1,8 @@
+{
+  "name": "herdr-codebuddy",
+  "version": "0.1.0",
+  "description": "CodeBuddy hooks adapter for Herdr",
+  "scripts": {
+    "test": "node --test test.js"
+  }
+}
