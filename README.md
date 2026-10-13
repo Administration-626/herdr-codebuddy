@@ -10,8 +10,6 @@ CodeBuddy hooks report session state to Herdr. This adds no Herdr process or scr
 | `Notification` (`permission_prompt`) | `blocked` |
 | `SessionEnd` | release the agent |
 
-The hook reports only when CodeBuddy runs in a Herdr pane and `HERDR_ENV`, `HERDR_PANE_ID`, and `HERDR_BIN_PATH` are set. It requires `node` on `PATH`. State reports run asynchronously; failures do not block CodeBuddy. On session start and stop, a background task copies CodeBuddy's terminal title to the Herdr pane name, which is shown in the sidebar. It reads `terminal_title_stripped` from `herdr agent get` and leaves the pane unchanged if the title is empty. Tab names are not changed. Automatic updates can replace a pane name set manually in Herdr. The `--seq` value is the current time in milliseconds, so events in the same millisecond may share a value.
-
 ## Install
 
 Requirements: `curl`, Node.js, and CodeBuddy.
@@ -20,7 +18,6 @@ Requirements: `curl`, Node.js, and CodeBuddy.
 curl -fsSL https://raw.githubusercontent.com/Ziy1-Tan/herdr-codebuddy/main/install.sh | sh
 ```
 
-The script downloads the installer and hook to a temporary directory; it does not clone the repository. The installer adds hooks to `~/.codebuddy/settings.json`, backs up the file if it changes, and copies the hook to `~/.codebuddy/hooks/`. Existing hooks are retained. Restart CodeBuddy after installation.
 
 To uninstall:
 
