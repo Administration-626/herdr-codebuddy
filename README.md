@@ -10,7 +10,7 @@ CodeBuddy hooks report session state to Herdr. This adds no Herdr process or scr
 | `Notification` (`permission_prompt`) | `blocked` |
 | `SessionEnd` | release the agent |
 
-The hook reports only when CodeBuddy runs in a Herdr pane and `HERDR_ENV`, `HERDR_PANE_ID`, and `HERDR_BIN_PATH` are set. It requires `node` on `PATH`. Reports run asynchronously; failures do not block CodeBuddy. The `--seq` value is the current time in milliseconds, so events in the same millisecond may share a value.
+The hook reports only when CodeBuddy runs in a Herdr pane and `HERDR_ENV`, `HERDR_PANE_ID`, and `HERDR_BIN_PATH` are set. It requires `node` on `PATH`. State reports run asynchronously; failures do not block CodeBuddy. On session start and stop, a background task copies CodeBuddy's terminal title to the Herdr pane name, which is shown in the sidebar. It reads `terminal_title_stripped` from `herdr agent get` and leaves the pane unchanged if the title is empty. Tab names are not changed. Automatic updates can replace a pane name set manually in Herdr. The `--seq` value is the current time in milliseconds, so events in the same millisecond may share a value.
 
 ## Install
 
@@ -40,8 +40,7 @@ npm test
 
 - No Herdr process detection or screen-state manifest.
 - No Herdr restart recovery command; CodeBuddy resume support has not been verified.
-- Renaming a pane in Herdr still updates its sidebar label. This adapter does not automatically copy CodeBuddy's terminal title to the Herdr pane/tab, as the hook in [discussion #3981](https://github.com/herdrdev/herdr/discussions/3981) does.
 - Permission notifications use a generic message; the original notification text is not forwarded.
-- Uses the hook event names and settings format shown in discussion #3981. Real-session testing is still needed.
+- Hook names and settings follow [discussion #3981](https://github.com/herdrdev/herdr/discussions/3981), which reports a live test with CodeBuddy 2.150.0. This repo's tests cover sample event payloads and mocked Herdr commands, not an interactive CodeBuddy session.
 
 Reference: [Add Herdr support to your agent](https://herdr.dev/docs/add-herdr-support/).

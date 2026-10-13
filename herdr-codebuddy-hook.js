@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-const { spawn } = require('node:child_process');
+const { spawn, spawnSync } = require('node:child_process');
 
 const EVENT_STATES = {
   SessionStart: 'idle',
@@ -10,7 +10,36 @@ const EVENT_STATES = {
   Notification: 'blocked',
 };
 
+function syncTitle(paneId) {
+  const binary = process.env.HERDR_BIN_PATH;
+  if (!binary) return;
+
+  const result = spawnSync(binary, ['agent', 'get', paneId], {
+    encoding: 'utf8',
+    timeout: 3000,
+    windowsHide: true,
+  });
+  if (result.error || result.status !== 0) return;
+
+  let agent;
+  try {
+    agent = JSON.parse(result.stdout).result?.agent;
+  } catch {
+    return;
+  }
+
+  const title = agent?.terminal_title_stripped?.trim();
+  if (!title) return;
+
+  spawnSync(binary, ['pane', 'rename', paneId, title], { timeout: 3000, windowsHide: true });
+}
+
 async function main() {
+  if (process.argv[2] === '--sync-title') {
+    syncTitle(process.argv[3]);
+    return;
+  }
+
   const { HERDR_ENV, HERDR_PANE_ID, HERDR_BIN_PATH } = process.env;
   if (HERDR_ENV !== '1' || !HERDR_PANE_ID || !HERDR_BIN_PATH) return;
 
@@ -42,12 +71,21 @@ async function main() {
 
   if (process.env.HERDR_CODEBUDDY_DRY_RUN === '1') {
     console.log(JSON.stringify({ binary: HERDR_BIN_PATH, args }));
-    return;
+  } else {
+    const child = spawn(HERDR_BIN_PATH, args, { detached: true, stdio: 'ignore', windowsHide: true });
+    child.on('error', () => {});
+    child.unref();
   }
 
-  const child = spawn(HERDR_BIN_PATH, args, { detached: true, stdio: 'ignore', windowsHide: true });
-  child.on('error', () => {});
-  child.unref();
+  if (name === 'SessionStart' || name === 'Stop') {
+    const titleSync = spawn(process.execPath, [__filename, '--sync-title', HERDR_PANE_ID], {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true,
+    });
+    titleSync.on('error', () => {});
+    titleSync.unref();
+  }
 }
 
 main().catch(() => {});
