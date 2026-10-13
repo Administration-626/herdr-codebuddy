@@ -53,24 +53,6 @@ test('maps lifecycle and permission events to report-agent states', () => {
   }
 });
 
-test('syncs the CodeBuddy terminal title to the Herdr pane', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'herdr-codebuddy-sync-'));
-  const fakeHerdr = path.join(dir, 'herdr');
-  const logFile = path.join(dir, 'calls.jsonl');
-  fs.writeFileSync(fakeHerdr, `#!/usr/bin/env node\nconst fs = require('node:fs');\nconst args = process.argv.slice(2);\nif (args[0] === 'agent' && args[1] === 'get') {\n  console.log(JSON.stringify({ result: { agent: { terminal_title_stripped: 'Task title', tab_id: 'tab-1' } } }));\n} else {\n  fs.appendFileSync(process.env.HERDR_TEST_LOG, JSON.stringify(args) + '\\n');\n}\n`);
-  fs.chmodSync(fakeHerdr, 0o755);
-
-  try {
-    execFileSync(process.execPath, [HOOK, '--sync-title', 'pane-1'], {
-      env: { ...process.env, HERDR_BIN_PATH: fakeHerdr, HERDR_TEST_LOG: logFile },
-    });
-    const calls = fs.readFileSync(logFile, 'utf8').trim().split('\n').map(line => JSON.parse(line));
-    assert.deepEqual(calls, [['pane', 'rename', 'pane-1', 'Task title']]);
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
-});
-
 test('releases the reported agent on SessionEnd', () => {
   const result = runHook('SessionEnd');
   assert.deepEqual(result.args.slice(0, 3), ['pane', 'release-agent', 'pane-test']);

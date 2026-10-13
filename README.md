@@ -36,11 +36,4 @@ For a local checkout, run `node install.js install` or `node install.js uninstal
 npm test
 ```
 
-## Limitations
-
-- No Herdr process detection or screen-state manifest.
-- No Herdr restart recovery command; CodeBuddy resume support has not been verified.
-- Permission notifications use a generic message; the original notification text is not forwarded.
-- Hook names and settings follow [discussion #3981](https://github.com/herdrdev/herdr/discussions/3981), which reports a live test with CodeBuddy 2.150.0. This repo's tests cover sample event payloads and mocked Herdr commands, not an interactive CodeBuddy session.
-
 Reference: [Add Herdr support to your agent](https://herdr.dev/docs/add-herdr-support/).
