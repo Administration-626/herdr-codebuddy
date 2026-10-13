@@ -83,8 +83,21 @@ function main() {
     try {
       fs.renameSync(tempFile, settingsFile);
     } catch (error) {
-      fs.rmSync(tempFile, { force: true });
-      throw error;
+      if (process.platform !== 'win32' || !fs.existsSync(settingsFile)) {
+        fs.rmSync(tempFile, { force: true });
+        throw error;
+      }
+
+      const previousFile = `${settingsFile}.${process.pid}.previous`;
+      fs.renameSync(settingsFile, previousFile);
+      try {
+        fs.renameSync(tempFile, settingsFile);
+        fs.rmSync(previousFile, { force: true });
+      } catch (replaceError) {
+        fs.renameSync(previousFile, settingsFile);
+        fs.rmSync(tempFile, { force: true });
+        throw replaceError;
+      }
     }
   }
 

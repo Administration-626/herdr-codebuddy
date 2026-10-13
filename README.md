@@ -14,17 +14,21 @@ The hook runs only inside a Herdr pane (`HERDR_ENV=1`, `HERDR_PANE_ID`, and `HER
 
 ## Install
 
-```sh
-node install.js install
-```
-
-The installer adds hooks to `~/.codebuddy/settings.json`, backs up the existing file when it changes, and copies the hook to `~/.codebuddy/hooks/`. Restart CodeBuddy after installation. Existing unrelated hooks are retained.
-
-## Uninstall
+Requirements: `curl`, Node.js, and CodeBuddy.
 
 ```sh
-node install.js uninstall
+curl -fsSL https://raw.githubusercontent.com/Ziy1-Tan/herdr-codebuddy/main/install.sh | sh
 ```
+
+The script downloads the installer and hook to a temporary directory; it does not clone the repository. The installer adds hooks to `~/.codebuddy/settings.json`, backs up the file if it changes, and copies the hook to `~/.codebuddy/hooks/`. Existing hooks are retained. Restart CodeBuddy after installation.
+
+To uninstall:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Ziy1-Tan/herdr-codebuddy/main/install.sh | sh -s -- uninstall
+```
+
+For a local checkout, run `node install.js install` or `node install.js uninstall`.
 
 ## Test
 
