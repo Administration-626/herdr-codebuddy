@@ -32,9 +32,6 @@ To uninstall:
 curl -fsSL https://raw.githubusercontent.com/Ziy1-Tan/herdr-codebuddy/main/install.sh | sh -s -- uninstall
 ```
 
-Re-running the installer updates the hook. The previous copy is kept at
-`~/.codebuddy/hooks/herdr-codebuddy-hook.js.bak` and is replaced on the next
-update that changes the file, so one version is always available to roll back to.
 
 For a local checkout, run `node install.js install` or `node install.js uninstall`.
 
