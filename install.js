@@ -80,9 +80,11 @@ function main() {
   const content = `${JSON.stringify(updated, null, 2)}\n`;
   const unchanged = original !== null && JSON.stringify(settings) === JSON.stringify(updated);
 
+  let settingsBackup = null;
   if (!unchanged) {
     if (original !== null) {
-      fs.copyFileSync(settingsFile, `${settingsFile}.herdr-codebuddy-${Date.now()}.bak`);
+      settingsBackup = `${settingsFile}.herdr-codebuddy-${Date.now()}.bak`;
+      fs.copyFileSync(settingsFile, settingsBackup);
     }
     const tempFile = `${settingsFile}.${process.pid}.tmp`;
     fs.writeFileSync(tempFile, content, { mode: 0o600 });
@@ -107,21 +109,36 @@ function main() {
     }
   }
 
+  const lines = [];
+  const backupNote = settingsBackup ? ` (backup: ${settingsBackup})` : '';
+
   if (action === 'install') {
     fs.mkdirSync(path.dirname(hookFile), { recursive: true });
-    // Keep the hook we are about to replace, one copy deep, so a bad update can
-    // be rolled back by copying the .bak back over it.
+    // One copy deep, so a bad update can be rolled back by copying the .bak back.
     const source = path.join(__dirname, 'herdr-codebuddy-hook.js');
-    if (fs.existsSync(hookFile) && !fs.readFileSync(hookFile).equals(fs.readFileSync(source))) {
+    let replaced = null;
+    if (!fs.existsSync(hookFile)) {
+      fs.copyFileSync(source, hookFile);
+    } else if (!fs.readFileSync(hookFile).equals(fs.readFileSync(source))) {
       fs.copyFileSync(hookFile, `${hookFile}.bak`);
+      fs.copyFileSync(source, hookFile);
+      replaced = `Replaced hook script ${hookFile} (backup: ${hookFile}.bak).`;
     }
-    fs.copyFileSync(source, hookFile);
-    console.log(`Installed hooks in ${settingsFile}. Restart CodeBuddy to load them.`);
+
+    if (!unchanged) lines.push(`Installed hooks in ${settingsFile}${backupNote}.`);
+    else if (!replaced) lines.push(`Hooks already installed in ${settingsFile}.`);
+    if (replaced) lines.push(replaced);
+    lines.push('Restart CodeBuddy to load them.');
   } else {
+    const existed = fs.existsSync(hookFile) || fs.existsSync(`${hookFile}.bak`);
     fs.rmSync(hookFile, { force: true });
     fs.rmSync(`${hookFile}.bak`, { force: true });
-    console.log(`Removed Herdr CodeBuddy hooks from ${settingsFile}.`);
+    lines.push(unchanged && !existed
+      ? `No Herdr CodeBuddy hooks in ${settingsFile}.`
+      : `Removed Herdr CodeBuddy hooks from ${settingsFile}${backupNote}.`);
   }
+
+  console.log(lines.join('\n'));
 }
 
 try {

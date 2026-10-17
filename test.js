@@ -115,11 +115,15 @@ test('installer keeps one backup of the hook it replaces', t => {
     assert.ok(!fs.existsSync(backupFile));
 
     fs.appendFileSync(hookFile, '// local edit\n');
-    runInstaller('install');
+    const settingsFile = path.join(settingsDir, 'settings.json');
+    assert.equal(runInstaller('install'), [
+      `Replaced hook script ${hookFile} (backup: ${backupFile}).`,
+      'Restart CodeBuddy to load them.',
+    ].join('\n') + '\n');
     assert.ok(fs.readFileSync(backupFile, 'utf8').endsWith('// local edit\n'));
     assert.ok(!fs.readFileSync(hookFile, 'utf8').endsWith('// local edit\n'));
 
-    runInstaller('install');
+    assert.equal(runInstaller('install'), `Hooks already installed in ${settingsFile}.\nRestart CodeBuddy to load them.\n`);
     assert.deepEqual(fs.readdirSync(hooksDir).filter(name => name.endsWith('.bak')).sort(), ['herdr-codebuddy-hook.js.bak']);
     assert.ok(fs.readFileSync(backupFile, 'utf8').endsWith('// local edit\n'));
 
@@ -147,8 +151,13 @@ test('installer is idempotent and uninstall preserves unrelated hooks', t => {
     const env = { ...process.env, HOME: home, USERPROFILE: home };
     const runInstaller = action => execFileSync(process.execPath, [INSTALLER, action], { env, encoding: 'utf8' });
 
-    runInstaller('install');
-    runInstaller('install');
+    const first = runInstaller('install');
+    assert.match(first, /^Installed hooks in .*settings\.json \(backup: .*\.bak\)\.\nRestart CodeBuddy to load them\.\n$/);
+
+    assert.equal(runInstaller('install'), `Hooks already installed in ${settingsFile}.\nRestart CodeBuddy to load them.\n`);
+    const settingsBackups = fs.readdirSync(settingsDir).filter(name => /^settings\.json\.herdr-codebuddy-.*\.bak$/.test(name));
+    assert.equal(settingsBackups.length, 1);
+
     const installed = JSON.parse(fs.readFileSync(settingsFile, 'utf8'));
     assert.equal(installed.theme, 'dark');
     assert.equal(installed.hooks.SessionStart[0].matcher, 'startup|resume|clear|compact');
@@ -158,7 +167,8 @@ test('installer is idempotent and uninstall preserves unrelated hooks', t => {
     }
     assert.ok(fs.existsSync(path.join(settingsDir, 'hooks', 'herdr-codebuddy-hook.js')));
 
-    runInstaller('uninstall');
+    const removed = runInstaller('uninstall');
+    assert.match(removed, /^Removed Herdr CodeBuddy hooks from .*settings\.json \(backup: .*\)\.\n$/);
     const uninstalled = JSON.parse(fs.readFileSync(settingsFile, 'utf8'));
     assert.equal(uninstalled.theme, 'dark');
     assert.equal(uninstalled.hooks.Stop.length, 1);
