@@ -35,9 +35,12 @@ test('does not report outside a Herdr pane', () => {
 test('maps lifecycle and permission events to report-agent states', () => {
   const cases = [
     ['SessionStart', { session_id: 'session-abc' }, 'idle'],
+    ['SessionStart', { session_id: 'session-compact', source: 'compact' }, 'working'],
+    ['SessionStart', { session_id: 'session-clear', source: 'clear' }, 'idle'],
     ['UserPromptSubmit', {}, 'working'],
     ['PreToolUse', {}, 'working'],
     ['PostToolUse', {}, 'working'],
+    ['PostToolUseFailure', {}, 'working'],
     ['Stop', {}, 'idle'],
     ['Notification', { notification_type: 'permission_prompt' }, 'blocked'],
   ];
@@ -50,9 +53,9 @@ test('maps lifecycle and permission events to report-agent states', () => {
     assert.ok(result.args.includes('--agent') && result.args.includes('codebuddy'));
     assert.ok(Number(result.args[result.args.indexOf('--seq') + 1]) > 0);
     if (event === 'SessionStart') {
-      assert.equal(result.args[result.args.indexOf('--agent-session-id') + 1], 'session-abc');
+      assert.equal(result.args[result.args.indexOf('--agent-session-id') + 1], payload.session_id);
       assert.deepEqual(result.args.slice(result.args.indexOf('--') + 1), [
-        'codebuddy', '--resume', 'session-abc',
+        'codebuddy', '--resume', payload.session_id,
       ]);
     }
   }
@@ -120,7 +123,7 @@ test('installer is idempotent and uninstall preserves unrelated hooks', t => {
     assert.equal(installed.theme, 'dark');
     assert.equal(installed.hooks.SessionStart[0].matcher, 'startup|resume|clear|compact');
     assert.equal(installed.hooks.Stop.length, 2);
-    for (const event of ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'Stop', 'Notification', 'SessionEnd']) {
+    for (const event of ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'PostToolUseFailure', 'Stop', 'Notification', 'SessionEnd']) {
       assert.equal(installed.hooks[event].filter(entry => entry.hooks?.some(hook => hook.command?.includes('herdr-codebuddy-hook.js'))).length, 1);
     }
     assert.ok(fs.existsSync(path.join(settingsDir, 'hooks', 'herdr-codebuddy-hook.js')));
@@ -130,7 +133,7 @@ test('installer is idempotent and uninstall preserves unrelated hooks', t => {
     assert.equal(uninstalled.theme, 'dark');
     assert.equal(uninstalled.hooks.Stop.length, 1);
     assert.equal(uninstalled.hooks.Stop[0].hooks[0].command, 'echo user-hook');
-    for (const event of ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'Notification', 'SessionEnd']) {
+    for (const event of ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'PostToolUseFailure', 'Notification', 'SessionEnd']) {
       assert.ok(!Object.hasOwn(uninstalled.hooks, event));
     }
     assert.ok(!fs.existsSync(path.join(settingsDir, 'hooks', 'herdr-codebuddy-hook.js')));

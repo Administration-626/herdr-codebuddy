@@ -6,11 +6,12 @@ const { spawn } = require('node:child_process');
 const EVENT_STATES = {
   SessionStart: 'idle',
   UserPromptSubmit: 'working',
-  // PreToolUse runs before the permission system and PostToolUse after the tool
-  // succeeds, so together they clear a 'blocked' left by an approved
-  // permission_prompt instead of holding it until Stop.
+  // PreToolUse runs before the permission prompt; the tool events that follow
+  // clear a 'blocked' left by an approved prompt, and the next tool call's
+  // PreToolUse recovers after a denied one instead of holding it until Stop.
   PreToolUse: 'working',
   PostToolUse: 'working',
+  PostToolUseFailure: 'working',
   Stop: 'idle',
   Notification: 'blocked',
 };
@@ -34,6 +35,10 @@ async function main() {
   if (!release && !Object.hasOwn(EVENT_STATES, name)) return;
   if (name === 'Notification' && event.notification_type !== 'permission_prompt') return;
 
+  // Compaction keeps the session and runs mid-turn, before the agent continues,
+  // so the pane is working; /clear starts a new, empty session and is idle.
+  const state = name === 'SessionStart' && event.source === 'compact' ? 'working' : EVENT_STATES[name];
+
   const args = [
     'pane', release ? 'release-agent' : 'report-agent', HERDR_PANE_ID,
     '--source', 'custom:codebuddy',
@@ -41,7 +46,7 @@ async function main() {
     '--seq', String(Date.now()),
   ];
 
-  if (!release) args.push('--state', EVENT_STATES[name]);
+  if (!release) args.push('--state', state);
   if (name === 'SessionStart' && typeof event.session_id === 'string'
       && /^[a-zA-Z0-9][a-zA-Z0-9:_-]*$/.test(event.session_id)) {
     args.push(
