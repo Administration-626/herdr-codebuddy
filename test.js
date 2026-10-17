@@ -101,6 +101,36 @@ test('uninstall leaves settings alone when the adapter is absent', t => {
   }
 });
 
+test('installer keeps one backup of the hook it replaces', t => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'herdr-codebuddy-home-'));
+  try {
+    const settingsDir = path.join(home, '.codebuddy');
+    const hooksDir = path.join(settingsDir, 'hooks');
+    const hookFile = path.join(hooksDir, 'herdr-codebuddy-hook.js');
+    const backupFile = `${hookFile}.bak`;
+    const env = { ...process.env, HOME: home, USERPROFILE: home };
+    const runInstaller = action => execFileSync(process.execPath, [INSTALLER, action], { env, encoding: 'utf8' });
+
+    runInstaller('install');
+    assert.ok(!fs.existsSync(backupFile));
+
+    fs.appendFileSync(hookFile, '// local edit\n');
+    runInstaller('install');
+    assert.ok(fs.readFileSync(backupFile, 'utf8').endsWith('// local edit\n'));
+    assert.ok(!fs.readFileSync(hookFile, 'utf8').endsWith('// local edit\n'));
+
+    runInstaller('install');
+    assert.deepEqual(fs.readdirSync(hooksDir).filter(name => name.endsWith('.bak')).sort(), ['herdr-codebuddy-hook.js.bak']);
+    assert.ok(fs.readFileSync(backupFile, 'utf8').endsWith('// local edit\n'));
+
+    runInstaller('uninstall');
+    assert.ok(!fs.existsSync(hookFile));
+    assert.ok(!fs.existsSync(backupFile));
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test('installer is idempotent and uninstall preserves unrelated hooks', t => {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'herdr-codebuddy-home-'));
   try {
