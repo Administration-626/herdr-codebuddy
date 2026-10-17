@@ -109,10 +109,17 @@ function main() {
 
   if (action === 'install') {
     fs.mkdirSync(path.dirname(hookFile), { recursive: true });
-    fs.copyFileSync(path.join(__dirname, 'herdr-codebuddy-hook.js'), hookFile);
+    // Keep the hook we are about to replace, one copy deep, so a bad update can
+    // be rolled back by copying the .bak back over it.
+    const source = path.join(__dirname, 'herdr-codebuddy-hook.js');
+    if (fs.existsSync(hookFile) && !fs.readFileSync(hookFile).equals(fs.readFileSync(source))) {
+      fs.copyFileSync(hookFile, `${hookFile}.bak`);
+    }
+    fs.copyFileSync(source, hookFile);
     console.log(`Installed hooks in ${settingsFile}. Restart CodeBuddy to load them.`);
   } else {
     fs.rmSync(hookFile, { force: true });
+    fs.rmSync(`${hookFile}.bak`, { force: true });
     console.log(`Removed Herdr CodeBuddy hooks from ${settingsFile}.`);
   }
 }
