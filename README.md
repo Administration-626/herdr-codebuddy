@@ -18,6 +18,19 @@ The tool events keep the reported state honest: approving a permission
 prompt otherwise left the pane reported as `blocked` until `Stop`. The
 failure event covers a tool that fails or is interrupted after approval.
 
+## Observed Herdr-side behavior
+
+Verified on Linux with Herdr 0.9.5 and CodeBuddy 2.170.0:
+
+- After `Stop` reports `idle`, Herdr itself advances the pane to `done` once
+  it settles, so `herdr agent list` and the sidebar show `done` (not `idle`)
+  between turns. The hook only ever reports `idle`; `done` is Herdr's own
+  completion detection on top.
+- Multiple CodeBuddy instances in different panes report concurrently
+  without interference — each hook reports only its own `HERDR_PANE_ID`.
+- Hook stdin arrives as single-line JSON with `hook_event_name`, matching
+  the Claude Code hook schema.
+
 ## Install
 
 Requirements: `curl`, Node.js, and CodeBuddy.
