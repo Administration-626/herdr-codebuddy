@@ -54,7 +54,7 @@ async function main() {
       '--', 'codebuddy', '--resume', event.session_id,
     );
   }
-  if (name === 'Notification') args.push('--message', 'CodeBuddy permission required');
+  if (name === 'Notification') args.push('--message', event.message || 'CodeBuddy permission required');
 
   if (process.env.HERDR_CODEBUDDY_DRY_RUN === '1') {
     console.log(JSON.stringify({ binary: HERDR_BIN_PATH, args }));

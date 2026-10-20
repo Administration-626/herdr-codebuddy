@@ -67,6 +67,13 @@ test('omits recovery data for invalid session IDs', () => {
   assert.ok(!result.args.includes('--'));
 });
 
+test('passes the permission message through and falls back to a default', () => {
+  const withMessage = runHook('Notification', { notification_type: 'permission_prompt', message: 'Allow running rm -rf?' });
+  assert.equal(withMessage.args[withMessage.args.indexOf('--message') + 1], 'Allow running rm -rf?');
+  const fallback = runHook('Notification', { notification_type: 'permission_prompt' });
+  assert.equal(fallback.args[fallback.args.indexOf('--message') + 1], 'CodeBuddy permission required');
+});
+
 test('releases the reported agent on SessionEnd', () => {
   const result = runHook('SessionEnd');
   assert.deepEqual(result.args.slice(0, 3), ['pane', 'release-agent', 'pane-test']);
