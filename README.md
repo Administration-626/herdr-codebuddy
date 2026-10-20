@@ -18,6 +18,10 @@ The tool events keep the reported state honest: approving a permission
 prompt otherwise left the pane reported as `blocked` until `Stop`. The
 failure event covers a tool that fails or is interrupted after approval.
 
+On `SessionStart` and `Stop` the hook also copies the pane's OSC terminal
+title — CodeBuddy sets it to the current task — to the pane and tab labels,
+so a fleet of panes shows what each CodeBuddy is working on.
+
 ## Observed Herdr-side behavior
 
 Verified on Linux with Herdr 0.9.5 and CodeBuddy 2.170.0:

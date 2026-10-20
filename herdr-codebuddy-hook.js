@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-const { spawn } = require('node:child_process');
+const { spawn, execFile } = require('node:child_process');
 
 const EVENT_STATES = {
   SessionStart: 'idle',
@@ -15,6 +15,42 @@ const EVENT_STATES = {
   Stop: 'idle',
   Notification: 'blocked',
 };
+
+// CodeBuddy sets its OSC terminal title to the current task; copy it to the pane
+// and tab labels so multi-agent fleets show what each CodeBuddy is doing.
+// Fire-and-forget: every failure is swallowed and the whole sync is capped at 2s.
+function syncTitle(herdr, pane) {
+  return new Promise(resolve => {
+    let settled = false;
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve();
+    };
+    const timer = setTimeout(done, 2000);
+    execFile(herdr, ['agent', 'get', pane], { timeout: 2000, windowsHide: true }, (error, stdout) => {
+      if (error) return done();
+      let info;
+      try {
+        info = JSON.parse(stdout).result;
+      } catch {
+        return done();
+      }
+      const title = typeof info.terminal_title_stripped === 'string' ? info.terminal_title_stripped.trim() : '';
+      const tabId = typeof info.tab_id === 'string' ? info.tab_id : '';
+      if (!title || /[\x00-\x1f]/.test(title)) return done();
+      const renames = [['pane', 'rename', pane, title]];
+      if (tabId) renames.push(['tab', 'rename', tabId, title]);
+      for (const renameArgs of renames) {
+        const child = spawn(herdr, renameArgs, { detached: true, stdio: 'ignore', windowsHide: true });
+        child.on('error', () => {});
+        child.unref();
+      }
+      done();
+    });
+  });
+}
 
 async function main() {
   const { HERDR_ENV, HERDR_PANE_ID, HERDR_BIN_PATH } = process.env;
@@ -62,6 +98,9 @@ async function main() {
     const child = spawn(HERDR_BIN_PATH, args, { detached: true, stdio: 'ignore', windowsHide: true });
     child.on('error', () => {});
     child.unref();
+    if (name === 'SessionStart' || name === 'Stop') {
+      await syncTitle(HERDR_BIN_PATH, HERDR_PANE_ID);
+    }
   }
 
 }

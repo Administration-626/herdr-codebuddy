@@ -90,6 +90,47 @@ test('ignores unrelated notifications and malformed JSON', () => {
   assert.equal(stdout, '');
 });
 
+test('syncs the OSC terminal title to pane and tab labels', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'herdr-codebuddy-title-'));
+  try {
+    const callsFile = path.join(dir, 'calls.log');
+    const fakeHerdr = path.join(dir, 'fake-herdr.sh');
+    fs.writeFileSync(fakeHerdr, [
+      '#!/bin/sh',
+      'if [ "$1" = agent ] && [ "$2" = get ]; then',
+      "  printf '%s' '{\"id\":\"x\",\"result\":{\"terminal_title_stripped\":\"Fix: readme\",\"tab_id\":\"w1:t2\"}}'",
+      '  exit 0',
+      'fi',
+      `printf '%s\\n' "$*" >> "${callsFile}"`,
+      'exit 0',
+    ].join('\n'));
+    fs.chmodSync(fakeHerdr, 0o755);
+
+    execFileSync(process.execPath, [HOOK], {
+      input: JSON.stringify({ hook_event_name: 'Stop' }),
+      env: {
+        ...process.env,
+        HERDR_ENV: '1',
+        HERDR_PANE_ID: 'pane-test',
+        HERDR_BIN_PATH: fakeHerdr,
+      },
+    });
+
+    // The renames are detached spawns; poll until they land (3s cap).
+    const deadline = Date.now() + 3000;
+    let calls = '';
+    while (Date.now() < deadline) {
+      calls = fs.existsSync(callsFile) ? fs.readFileSync(callsFile, 'utf8') : '';
+      if (calls.includes('tab rename')) break;
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
+    }
+    assert.match(calls, /pane rename pane-test Fix: readme/);
+    assert.match(calls, /tab rename w1:t2 Fix: readme/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('uninstall leaves settings alone when the adapter is absent', t => {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'herdr-codebuddy-home-'));
   try {
